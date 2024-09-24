@@ -5,6 +5,7 @@ import * as Battery from 'expo-battery';
 import * as TaskManager from 'expo-task-manager';
 
 const LOCATION_TASK_NAME = 'background-location-task';
+const WEBHOOK_URL = 'https://webhook.site/b55f5d01-58e7-402c-bc84-83f92e4be20b';
 
 export default function App() {
   const [deviceData, setDeviceData] = useState({});
@@ -55,10 +56,40 @@ export default function App() {
   const updateDeviceData = async (location) => {
     try {
       const batteryInfo = await Battery.getPowerStateAsync();
-      setDeviceData({ ...location, ...batteryInfo });
-      console.log('Localização atualizada:', location);
+      const updatedData = { ...location, ...batteryInfo };
+      setDeviceData(updatedData);
+      console.log('Localização atualizada:', updatedData);
+
+      // Envia os dados para o webhook
+      await sendDataToWebhook(updatedData);
     } catch (error) {
       console.error('Erro ao atualizar dados do dispositivo:', error);
+    }
+  };
+
+  const sendDataToWebhook = async (data) => {
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: data?.coords?.latitude,
+          longitude: data?.coords?.longitude,
+          batteryLevel: data?.batteryLevel,
+          batteryState: data?.batteryState,
+          lowPowerMode: data?.lowPowerMode,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Erro ao enviar dados para o webhook:', response.status);
+      } else {
+        console.log('Dados enviados para o webhook com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar dados para o webhook:', error);
     }
   };
 
@@ -125,8 +156,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (data) {
     const { locations } = data;
     const batteryInfo = await Battery.getPowerStateAsync();
-    console.log('Localização em segundo plano:', locations[0]);
-    // Aqui você pode enviar os dados para um servidor ou armazená-los localmente
+    const locationData = {
+      coords: locations[0]?.coords,
+      ...batteryInfo,
+    };
+    console.log('Localização em segundo plano:', locationData);
+
+    // Envia os dados para o webhook
+    await sendDataToWebhook(locationData);
   }
 });
 
