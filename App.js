@@ -3,9 +3,10 @@ import { StyleSheet, Text, View, Button, Platform, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import * as Battery from 'expo-battery';
 import * as TaskManager from 'expo-task-manager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOCATION_TASK_NAME = 'background-location-task';
-const WEBHOOK_URL = 'https://webhook.site/b55f5d01-58e7-402c-bc84-83f92e4be20b';
+const WEBHOOK_URL = 'https://webhook.site/b45c0ba9-6d04-4914-b08a-a0ce2e12fbb6';
 
 export default function App() {
   const [deviceData, setDeviceData] = useState({});
@@ -27,7 +28,7 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 5000, // Atualiza a cada 5 segundos
+            timeInterval: 60000, // Atualiza a cada 60 segundos
             distanceInterval: 0,
           },
           (location) => {
@@ -68,25 +69,29 @@ export default function App() {
   };
 
   const sendDataToWebhook = async (data) => {
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          latitude: data?.coords?.latitude,
-          longitude: data?.coords?.longitude,
-          batteryLevel: data?.batteryLevel,
-          batteryState: data?.batteryState,
-          lowPowerMode: data?.lowPowerMode,
-        }),
-      });
+    const isTracking = await AsyncStorage.getItem('location_update');
 
-      if (!response.ok) {
-        console.error('Erro ao enviar dados para o webhook:', response.status);
-      } else {
-        console.log('Dados enviados para o webhook com sucesso');
+    try {
+      if (isTracking == 'send') {
+        const response = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            latitude: data?.coords?.latitude,
+            longitude: data?.coords?.longitude,
+            batteryLevel: data?.batteryLevel,
+            batteryState: data?.batteryState,
+            lowPowerMode: data?.lowPowerMode,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Erro ao enviar dados para o webhook:', response.status);
+        } else {
+          console.log('Dados enviados para o webhook com sucesso');
+        }
       }
     } catch (error) {
       console.error('Erro ao enviar dados para o webhook:', error);
@@ -104,7 +109,7 @@ export default function App() {
 
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 5000, // Atualiza a cada 5 segundos
+        timeInterval: 60000, // Atualiza a cada 60 segundos
         distanceInterval: 0,
         showsBackgroundLocationIndicator: true, // Apenas iOS
         foregroundService: {
@@ -113,7 +118,7 @@ export default function App() {
           notificationColor: '#FF0000',
         },
       });
-
+      await AsyncStorage.setItem('location_update', 'send');
       setIsTracking(true);
       console.log('Rastreamento iniciado');
     } catch (error) {
@@ -124,6 +129,7 @@ export default function App() {
   const stopLocationUpdates = async () => {
     try {
       await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+      await AsyncStorage.setItem('location_update', '');
       setIsTracking(false);
       console.log('Rastreamento parado');
     } catch (error) {
