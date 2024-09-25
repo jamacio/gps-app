@@ -8,6 +8,57 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const LOCATION_TASK_NAME = 'background-location-task';
 const WEBHOOK_URL = 'https://webhook.site/b45c0ba9-6d04-4914-b08a-a0ce2e12fbb6';
 
+// Definição global da função
+const sendDataToWebhook = async (data) => {
+  const isTracking = await AsyncStorage.getItem('location_update');
+
+  try {
+    if (isTracking === 'send') {
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: data?.coords?.latitude,
+          longitude: data?.coords?.longitude,
+          batteryLevel: data?.batteryLevel,
+          batteryState: data?.batteryState,
+          lowPowerMode: data?.lowPowerMode,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Erro ao enviar dados para o webhook:', response.status);
+      } else {
+        console.log('Dados enviados para o webhook com sucesso');
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao enviar dados para o webhook:', error);
+  }
+};
+
+// Definição da tarefa em segundo plano
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+  if (error) {
+    console.error('Erro na tarefa de localização:', error);
+    return;
+  }
+  if (data) {
+    const { locations } = data;
+    const batteryInfo = await Battery.getPowerStateAsync();
+    const locationData = {
+      coords: locations[0]?.coords,
+      ...batteryInfo,
+    };
+    console.log('Localização em segundo plano:', locationData);
+
+    // Envia os dados para o webhook
+    await sendDataToWebhook(locationData);
+  }
+});
+
 export default function App() {
   const [deviceData, setDeviceData] = useState({});
   const [isTracking, setIsTracking] = useState(false);
@@ -68,40 +119,15 @@ export default function App() {
     }
   };
 
-  const sendDataToWebhook = async (data) => {
-    const isTracking = await AsyncStorage.getItem('location_update');
-
-    try {
-      if (isTracking == 'send') {
-        const response = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            latitude: data?.coords?.latitude,
-            longitude: data?.coords?.longitude,
-            batteryLevel: data?.batteryLevel,
-            batteryState: data?.batteryState,
-            lowPowerMode: data?.lowPowerMode,
-          }),
-        });
-
-        if (!response.ok) {
-          console.error('Erro ao enviar dados para o webhook:', response.status);
-        } else {
-          console.log('Dados enviados para o webhook com sucesso');
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao enviar dados para o webhook:', error);
-    }
-  };
-
   const startLocationUpdates = async () => {
     try {
-      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      if (foregroundStatus !== 'granted') {
+        Alert.alert('Permissão negada', 'Permissão de localização em primeiro plano negada.');
+        return;
+      }
 
+      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== 'granted') {
         Alert.alert('Permissão negada', 'Permissão de localização em segundo plano negada.');
         return;
@@ -149,29 +175,10 @@ export default function App() {
         onPress={isTracking ? stopLocationUpdates : startLocationUpdates}
         title={isTracking ? 'Parar Rastreamento' : 'Iniciar Rastreamento em Segundo Plano'}
       />
+      <Text>V1.0.1</Text>
     </View>
   );
 }
-
-// Definição da tarefa em segundo plano
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
-  if (error) {
-    console.error('Erro na tarefa de localização:', error);
-    return;
-  }
-  if (data) {
-    const { locations } = data;
-    const batteryInfo = await Battery.getPowerStateAsync();
-    const locationData = {
-      coords: locations[0]?.coords,
-      ...batteryInfo,
-    };
-    console.log('Localização em segundo plano:', locationData);
-
-    // Envia os dados para o webhook
-    await sendDataToWebhook(locationData);
-  }
-});
 
 const styles = StyleSheet.create({
   container: {
