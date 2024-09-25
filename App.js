@@ -4,9 +4,8 @@ import * as Location from 'expo-location';
 import * as Battery from 'expo-battery';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LOCATION_TASK_NAME, WEBHOOK_URL } from '@env'; // Importando do .env
+import { LOCATION_TASK_NAME, WEBHOOK_URL, TIME_INTERVAL, DISTANCE_INTERVAL } from '@env';
 
-// Definição global da função
 const sendDataToWebhook = async (data) => {
   const isTracking = await AsyncStorage.getItem('location_update');
 
@@ -27,20 +26,19 @@ const sendDataToWebhook = async (data) => {
       });
 
       if (!response.ok) {
-        console.error('Erro ao enviar dados para o webhook:', response.status);
+        console.error('Error sending data to webhook:', response.status);
       } else {
-        console.log('Dados enviados para o webhook com sucesso');
+        console.log('Data successfully sent to webhook');
       }
     }
   } catch (error) {
-    console.error('Erro ao enviar dados para o webhook:', error);
+    console.error('Error sending data to webhook:', error);
   }
 };
 
-// Definição da tarefa em segundo plano
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
-    console.error('Erro na tarefa de localização:', error);
+    console.error('Location task error:', error);
     return;
   }
   if (data) {
@@ -50,9 +48,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
       coords: locations[0]?.coords,
       ...batteryInfo,
     };
-    console.log('Localização em segundo plano:', locationData);
+    console.log('Background location:', locationData);
 
-    // Envia os dados para o webhook
     await sendDataToWebhook(locationData);
   }
 });
@@ -66,31 +63,28 @@ export default function App() {
 
     const initialize = async () => {
       try {
-        // Solicita permissões de localização em primeiro plano
         const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
         if (foregroundStatus !== 'granted') {
-          Alert.alert('Permissão negada', 'Permissão de localização em primeiro plano negada.');
+          Alert.alert('Permission denied', 'Foreground location permission denied.');
           return;
         }
 
-        // Inicia o listener para atualizar dados quando a localização mudar
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 3600000, // Atualiza a cada 1 hora (3600000ms)
-            distanceInterval: 100, // Atualiza a cada 100 metros
+            timeInterval: Number(TIME_INTERVAL),
+            distanceInterval: Number(DISTANCE_INTERVAL),
           },
           (location) => {
             updateDeviceData(location);
           }
         );
 
-        // Verifica se a tarefa já está em execução
         const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
         setIsTracking(hasStarted);
 
       } catch (error) {
-        console.error('Erro na inicialização:', error);
+        console.error('Initialization error:', error);
       }
     };
 
@@ -108,12 +102,11 @@ export default function App() {
       const batteryInfo = await Battery.getPowerStateAsync();
       const updatedData = { ...location, ...batteryInfo };
       setDeviceData(updatedData);
-      console.log('Localização atualizada:', updatedData);
+      console.log('Location updated:', updatedData);
 
-      // Envia os dados para o webhook
       await sendDataToWebhook(updatedData);
     } catch (error) {
-      console.error('Erro ao atualizar dados do dispositivo:', error);
+      console.error('Error updating device data:', error);
     }
   };
 
@@ -121,32 +114,32 @@ export default function App() {
     try {
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
-        Alert.alert('Permissão negada', 'Permissão de localização em primeiro plano negada.');
+        Alert.alert('Permission denied', 'Foreground location permission denied.');
         return;
       }
 
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== 'granted') {
-        Alert.alert('Permissão negada', 'Permissão de localização em segundo plano negada.');
+        Alert.alert('Permission denied', 'Background location permission denied.');
         return;
       }
 
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 3600000, // Atualiza a cada 1 hora
-        distanceInterval: 100, // Atualiza a cada 100 metros
-        showsBackgroundLocationIndicator: true, // Apenas iOS
+        timeInterval: Number(TIME_INTERVAL),
+        distanceInterval: Number(DISTANCE_INTERVAL),
+        showsBackgroundLocationIndicator: true,
         foregroundService: {
-          notificationTitle: 'Aplicativo em Execução',
-          notificationBody: 'Estamos rastreando sua localização em segundo plano',
+          notificationTitle: 'App Running',
+          notificationBody: 'We are tracking your location in the background',
           notificationColor: '#FF0000',
         },
       });
       await AsyncStorage.setItem('location_update', 'send');
       setIsTracking(true);
-      console.log('Rastreamento iniciado');
+      console.log('Tracking started');
     } catch (error) {
-      console.error('Erro ao iniciar atualizações de localização:', error);
+      console.error('Error starting location updates:', error);
     }
   };
 
@@ -155,9 +148,9 @@ export default function App() {
       await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
       await AsyncStorage.setItem('location_update', '');
       setIsTracking(false);
-      console.log('Rastreamento parado');
+      console.log('Tracking stopped', TIME_INTERVAL);
     } catch (error) {
-      console.error('Erro ao parar atualizações de localização:', error);
+      console.error('Error stopping location updates:', error);
     }
   };
 
@@ -166,12 +159,12 @@ export default function App() {
       <Text>Latitude: {deviceData?.coords?.latitude} </Text>
       <Text>Longitude: {deviceData?.coords?.longitude} </Text>
       <Text>------------------</Text>
-      <Text>Nível de Bateria: {deviceData?.batteryLevel} </Text>
-      <Text>Estado da Bateria: {deviceData?.batteryState} </Text>
-      <Text>Modo de Baixa Energia: {deviceData?.lowPowerMode ? 'Sim' : 'Não'} </Text>
+      <Text>Battery Level: {deviceData?.batteryLevel} </Text>
+      <Text>Battery State: {deviceData?.batteryState} </Text>
+      <Text>Low Power Mode: {deviceData?.lowPowerMode ? 'Yes' : 'No'} </Text>
       <Button
         onPress={isTracking ? stopLocationUpdates : startLocationUpdates}
-        title={isTracking ? 'Parar Rastreamento' : 'Iniciar Rastreamento em Segundo Plano'}
+        title={isTracking ? 'Stop Tracking' : 'Start Background Tracking'}
       />
       <Text>V1.0.1</Text>
     </View>
