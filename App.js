@@ -4,9 +4,7 @@ import * as Location from 'expo-location';
 import * as Battery from 'expo-battery';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const LOCATION_TASK_NAME = 'background-location-task';
-const WEBHOOK_URL = 'https://webhook.site/b45c0ba9-6d04-4914-b08a-a0ce2e12fbb6';
+import { LOCATION_TASK_NAME, WEBHOOK_URL } from '@env'; // Importando do .env
 
 // Definição global da função
 const sendDataToWebhook = async (data) => {
@@ -79,8 +77,8 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: 60000, // Atualiza a cada 60 segundos
-            distanceInterval: 0,
+            timeInterval: 3600000, // Atualiza a cada 1 hora (3600000ms)
+            distanceInterval: 100, // Atualiza a cada 100 metros
           },
           (location) => {
             updateDeviceData(location);
@@ -135,8 +133,8 @@ export default function App() {
 
       await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 60000, // Atualiza a cada 60 segundos
-        distanceInterval: 0,
+        timeInterval: 3600000, // Atualiza a cada 1 hora
+        distanceInterval: 100, // Atualiza a cada 100 metros
         showsBackgroundLocationIndicator: true, // Apenas iOS
         foregroundService: {
           notificationTitle: 'Aplicativo em Execução',
