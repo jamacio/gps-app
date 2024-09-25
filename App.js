@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button, Platform, Alert } from 'react-native';
+import { StyleSheet, Text, View, Button, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import * as Battery from 'expo-battery';
 import * as TaskManager from 'expo-task-manager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LOCATION_TASK_NAME, WEBHOOK_URL, TIME_INTERVAL, DISTANCE_INTERVAL } from '@env';
+
+const config = {
+  WEBHOOK_URL: "https://webhook.site/b45c0ba9-6d04-4914-b08a-a0ce2e12fbb6",
+  LOCATION_TASK_NAME: "background-location-task",
+  TIME_INTERVAL: 3600000, // 1 hora
+  DISTANCE_INTERVAL: 100, // 100 metros
+};
 
 const sendDataToWebhook = async (data) => {
   const isTracking = await AsyncStorage.getItem('location_update');
 
   try {
     if (isTracking === 'send') {
-      const response = await fetch(WEBHOOK_URL, {
+      const response = await fetch(config.WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +42,7 @@ const sendDataToWebhook = async (data) => {
   }
 };
 
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+TaskManager.defineTask(config.LOCATION_TASK_NAME, async ({ data, error }) => {
   if (error) {
     console.error('Location task error:', error);
     return;
@@ -72,15 +78,15 @@ export default function App() {
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
-            timeInterval: Number(TIME_INTERVAL),
-            distanceInterval: Number(DISTANCE_INTERVAL),
+            timeInterval: Number(config.TIME_INTERVAL),
+            distanceInterval: Number(config.DISTANCE_INTERVAL),
           },
           (location) => {
             updateDeviceData(location);
           }
         );
 
-        const hasStarted = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK_NAME);
+        const hasStarted = await Location.hasStartedLocationUpdatesAsync(config.LOCATION_TASK_NAME);
         setIsTracking(hasStarted);
 
       } catch (error) {
@@ -124,10 +130,10 @@ export default function App() {
         return;
       }
 
-      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+      await Location.startLocationUpdatesAsync(config.LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: Number(TIME_INTERVAL),
-        distanceInterval: Number(DISTANCE_INTERVAL),
+        timeInterval: Number(config.TIME_INTERVAL),
+        distanceInterval: Number(config.DISTANCE_INTERVAL),
         showsBackgroundLocationIndicator: true,
         foregroundService: {
           notificationTitle: 'App Running',
@@ -145,10 +151,10 @@ export default function App() {
 
   const stopLocationUpdates = async () => {
     try {
-      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+      await Location.stopLocationUpdatesAsync(config.LOCATION_TASK_NAME);
       await AsyncStorage.setItem('location_update', '');
       setIsTracking(false);
-      console.log('Tracking stopped', TIME_INTERVAL);
+      console.log('Tracking stopped', config.TIME_INTERVAL);
     } catch (error) {
       console.error('Error stopping location updates:', error);
     }
