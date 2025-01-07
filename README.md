@@ -33,7 +33,8 @@ yarn add expo@latest
 ```
 
 ## Screenshots
-- Main Screen
+![image2](https://github.com/user-attachments/assets/4c06872f-ebe5-40f8-bca5-f1f873b2ca00)
+
 
 ## Technologies Used
 - React Native
