@@ -43,8 +43,8 @@ yarn add expo@latest
 ```
 
 ## Screenshots
-
-![image2](https://github.com/user-attachments/assets/4c06872f-ebe5-40f8-bca5-f1f873b2ca00)
+![image0](https://github.com/user-attachments/assets/3c4bbc34-f967-4c52-94de-474a71069187)
+![image1](https://github.com/user-attachments/assets/0d6b493f-6f99-46f5-b33f-d12fd699fb01)
 
 ## Technologies Used
 
