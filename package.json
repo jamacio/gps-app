@@ -12,6 +12,8 @@
     "@expo/config-plugins": "~8.0.0",
     "@expo/prebuild-config": "~7.0.0",
     "@react-native-async-storage/async-storage": "^2.0.0",
+    "@react-navigation/bottom-tabs": "^7.2.0",
+    "@react-navigation/native": "^7.0.14",
     "eas-cli": "^4.1.2",
     "expo": "^52.0.24",
     "expo-battery": "~8.0.1",
@@ -19,7 +21,9 @@
     "expo-location": "~17.0.0",
     "expo-task-manager": "~11.8.2",
     "react": "18.2.0",
-    "react-native": "0.74.5"
+    "react-native": "0.74.5",
+    "react-native-safe-area-context": "^5.1.0",
+    "react-native-screens": "^4.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
