@@ -13,7 +13,7 @@
     "@expo/prebuild-config": "~7.0.0",
     "@react-native-async-storage/async-storage": "^2.0.0",
     "eas-cli": "^4.1.2",
-    "expo": "~51.0.0",
+    "expo": "^52.0.24",
     "expo-battery": "~8.0.1",
     "expo-file-system": "~17.0.1",
     "expo-location": "~17.0.0",

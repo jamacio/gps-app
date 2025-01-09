@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exibir Localização com Rastro e Informações da Bateria</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 500px;
+      width: 100%;
+    }
+
+    .info {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Localização do Dispositivo</h1>
+
+  <!-- Informações da bateria -->
+  <div class="info">
+    <p><strong>Última Posição:</strong></p>
+    <p><strong>Latitude:</strong> <span id="latitude">-</span></p>
+    <p><strong>Longitude:</strong> <span id="longitude">-</span></p>
+    <p><strong>Nível da Bateria:</strong> <span id="batteryLevel">-</span>%</p>
+    <p><strong>Status da Bateria:</strong> <span id="batteryState">-</span></p>
+    <p><strong>Modo de Economia de Energia:</strong> <span id="lowPowerMode">-</span></p>
+  </div>
+
+  <!-- Div para o mapa -->
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    // Variáveis globais
+    let map;
+    let polyline;
+    let marker;
+
+    // Função para inicializar o mapa
+    function initMap() {
+      map = L.map('map').setView([-23.4646054, -46.5997868], 15);
+
+      // Adicionando a camada do OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Inicializar polyline vazia
+      polyline = L.polyline([], { color: 'blue' }).addTo(map);
+    }
+
+    // Função para atualizar as informações de bateria e localização na interface
+    function updateInfo(position) {
+      document.getElementById('latitude').textContent = position.latitude;
+      document.getElementById('longitude').textContent = position.longitude;
+      document.getElementById('batteryLevel').textContent = (position.batteryLevel * 100).toFixed(2);
+      document.getElementById('batteryState').textContent = position.batteryState === 1 ? 'Carregando' : 'Descarregando';
+      document.getElementById('lowPowerMode').textContent = position.lowPowerMode ? 'Ativado' : 'Desativado';
+    }
+
+    // Função para adicionar um novo rastro ao mapa
+    function updateMap(positions) {
+      const latlngs = positions.map(pos => [pos.latitude, pos.longitude]);
+
+      // Atualizar polyline
+      polyline.setLatLngs(latlngs);
+
+      // Atualizar o marcador para a última posição
+      const lastPosition = positions[positions.length - 1];
+      if (marker) {
+        marker.setLatLng([lastPosition.latitude, lastPosition.longitude]);
+      } else {
+        marker = L.marker([lastPosition.latitude, lastPosition.longitude]).addTo(map);
+      }
+
+      // Centralizar o mapa na última posição
+      map.setView([lastPosition.latitude, lastPosition.longitude], 15);
+
+      // Atualizar as informações da última posição
+      updateInfo(lastPosition);
+    }
+
+    // Simulação de uma função AJAX para buscar novas posições
+    async function fetchPositions() {
+      // Exemplo: Aqui você pode fazer uma requisição real
+      // const response = await fetch('/url-para-buscar-posicoes');
+      // const data = await response.json();
+
+      // Simulação de novas posições para teste
+      const data = [
+        { latitude: -23.4646054, longitude: -46.5997868, batteryLevel: 0.41, batteryState: 1, lowPowerMode: false },
+        { latitude: -23.4647054, longitude: -46.5998868, batteryLevel: 0.42, batteryState: 1, lowPowerMode: false },
+        { latitude: -23.4648054, longitude: -46.5999868, batteryLevel: 0.43, batteryState: 1, lowPowerMode: false },
+        { latitude: -23.4649054, longitude: -46.6000868, batteryLevel: 0.44, batteryState: 1, lowPowerMode: false },
+        { latitude: -23.4650054, longitude: -46.6001868, batteryLevel: 0.45, batteryState: 1, lowPowerMode: false },
+        { latitude: -23.4651054, longitude: -46.6002868, batteryLevel: 0.46, batteryState: 1, lowPowerMode: false }
+      ];
+
+      // Chamar a função para atualizar o mapa com os novos dados
+      updateMap(data);
+    }
+
+    // Função para ser chamada periodicamente para atualizar as posições
+    function updatePositionsPeriodically() {
+      // Chamar a função AJAX para buscar novas posições
+      fetchPositions();
+
+      // Repetir a cada 60 segundos
+      setTimeout(updatePositionsPeriodically, 60000);
+    }
+
+    // Inicializar o mapa ao carregar a página
+    window.onload = () => {
+      initMap();
+      updatePositionsPeriodically(); // Começar a atualização periódica
+    };
+  </script>
+
+</body>
+
+</html>
