@@ -6,7 +6,7 @@ This is an application developed with React Native that captures the user's lati
 
 You can download the application using the link below.
 
-[Download the App](https://expo.dev/accounts/jamacio/projects/gps-app/builds/81945b4c-78c4-4d56-9e09-3a54c804ffdc)
+[Download the App](https://expo.dev/accounts/jamacio/projects/gps-app/builds/a5af9e7d-07b2-4f8b-a181-8810fbabdfdf)
 
 ## Installation and Start
 
@@ -43,6 +43,7 @@ yarn add expo@latest
 ```
 
 ## Screenshots
+
 ![image0](https://github.com/user-attachments/assets/3c4bbc34-f967-4c52-94de-474a71069187)
 ![image1](https://github.com/user-attachments/assets/0d6b493f-6f99-46f5-b33f-d12fd699fb01)
 
