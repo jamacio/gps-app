@@ -52,13 +52,15 @@ TaskManager.defineTask(config.LOCATION_TASK_NAME, async ({ data, error }) => {
   if (data) {
     const { locations } = data;
     const batteryInfo = await Battery.getPowerStateAsync();
+    const webhookUrl = await AsyncStorage.getItem('webhook_url');
+    const savedDeviceName = await AsyncStorage.getItem('device_name');
     const locationData = {
       coords: locations[0]?.coords,
       ...batteryInfo,
+      savedDeviceName
     };
     console.log('Background location:', locationData);
 
-    const webhookUrl = await AsyncStorage.getItem('webhook_url');
     await sendDataToWebhook(locationData, webhookUrl);
   }
 });
@@ -132,6 +134,26 @@ export default function App() {
   const [deviceName, setDeviceName] = useState('Device Name');
 
   useEffect(() => {
+    const loadStoredData = async () => {
+      try {
+        const savedUrl = await AsyncStorage.getItem('webhook_url');
+        const savedTimeInterval = await AsyncStorage.getItem('time_interval');
+        const savedDistanceInterval = await AsyncStorage.getItem('distance_interval');
+        const savedDeviceName = await AsyncStorage.getItem('device_name');
+
+        if (savedUrl) setWebhookUrl(savedUrl);
+        if (savedTimeInterval) setTimeInterval(savedTimeInterval);
+        if (savedDistanceInterval) setDistanceInterval(savedDistanceInterval);
+        if (savedDeviceName) setDeviceName(savedDeviceName);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+
+    loadStoredData();
+  }, []);
+
+  useEffect(() => {
     let subscription;
 
     const initialize = async () => {
@@ -173,11 +195,14 @@ export default function App() {
   const updateDeviceData = async (location) => {
     try {
       const batteryInfo = await Battery.getPowerStateAsync();
-      const updatedData = { ...location, ...batteryInfo, deviceName };
+      const savedWebhookUrl = await AsyncStorage.getItem('webhook_url');
+      const savedDeviceName = await AsyncStorage.getItem('device_name');
+
+      const updatedData = { ...location, ...batteryInfo, savedDeviceName };
       setDeviceData(updatedData);
       console.log('Location updated:', updatedData);
 
-      await sendDataToWebhook(updatedData, webhookUrl);
+      await sendDataToWebhook(updatedData, savedWebhookUrl);
     } catch (error) {
       console.error('Error updating device data:', error);
     }
